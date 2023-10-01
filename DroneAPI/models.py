@@ -18,7 +18,7 @@ class Drone(models.Model):
     weight_limit = models.PositiveIntegerField(
         validators=[MaxValueValidator(500, "Weight cannot be above 500 Grams")])
     battery_capacity = models.PositiveIntegerField(
-        validators=[MaxValueValidator(100, "Battery Percentage Limit is 100%")], default=100, editable=False)
+        validators=[MaxValueValidator(100, "Battery Percentage Limit is 100%")], default=100)
     state = models.CharField(choices=State.choices, max_length=255)
 
     def __str__(self) -> str:
@@ -43,3 +43,12 @@ class Medications(models.Model):
     class Meta:
         verbose_name = "Medication"
         verbose_name_plural = "Medications"
+
+class DroneBatteryLevelEvent(models.Model):
+    drone = models.ForeignKey(Drone, on_delete=models.CASCADE)
+    battery_level = models.PositiveIntegerField(
+        validators=[MaxValueValidator(100, "Battery Level Limit is 100%")])
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'DroneBatteryLevelEvent {self.id}'

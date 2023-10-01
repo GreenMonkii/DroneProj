@@ -124,34 +124,37 @@ def load_drone(request: Request, pk: int):
     """
 
     if request.method == "POST":
-        meds = request.data.get("meds").split(",")
-        drone = Drone.objects.get(pk=pk)
-        if drone and drone.state == Drone.State.IDLE:
-            drone.state = Drone.State.LOADING
-            drone.battery_capacity -= 20
-            drone.save()
-            for med in meds:
-                med_obj = Medications.objects.get(pk=int(med))
-                if drone.weight() + med_obj.weight <= drone.weight_limit:
-                    med_obj.drone = drone
-                    med_obj.save()
+        if drone.battery_capacity >= 25:
+            meds = request.data.get("meds").split(",")
+            drone = Drone.objects.get(pk=pk)
+            if drone and drone.state == Drone.State.IDLE:
+                drone.state = Drone.State.LOADING
+                drone.battery_capacity -= 20
+                drone.save()
+                for med in meds:
+                    med_obj = Medications.objects.get(pk=int(med))
+                    if drone.weight() + med_obj.weight <= drone.weight_limit:
+                        med_obj.drone = drone
+                        med_obj.save()
+                    else:
+                        drone.state = Drone.State.LOADED
+                        drone.save()
+                        return Response(
+                            {
+                                "message": f"Drone-{pk} is currently full and cannot take the medication order!"
+                            },
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
                 else:
-                    drone.state = Drone.State.LOADED
-                    drone.save()
-                    return Response(
-                        {
-                            "message": f"Drone-{pk} is currently full and cannot take the medication order!"
-                        },
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
+                    return Response({
+                        "message": f"Drone-{pk} loaded successfully!"
+                    }, status=status.HTTP_201_CREATED)
             else:
                 return Response({
-                    "message": f"Drone-{pk} loaded successfully!"
-                }, status=status.HTTP_201_CREATED)
-        else:
-            return Response({
-                "message": f"Drone-{pk} is currently not on standby and cannot be loaded!"
-            }, status=status.HTTP_406_NOT_ACCEPTABLE)
+                    "message": f"Drone-{pk} is currently not on standby and cannot be loaded!"
+                }, status=status.HTTP_406_NOT_ACCEPTABLE)
+    else:
+        return Response({"message": f"Drone-{pk} battery level is below 25% and cannot be loaded!"})
 
 
 @api_view(["GET"])
