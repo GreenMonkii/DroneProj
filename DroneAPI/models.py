@@ -34,7 +34,7 @@ class Medications(models.Model):
     weight = models.PositiveIntegerField()
     code = models.CharField(max_length=255, validators=[RegexValidator(
         regex=r"^[A-Z0-9_]+$", message="Only Uppercase Letters, Numbers and '_' are allowed", code="Invalid Code")])
-    image = models.ImageField(upload_to="uploads/")
+    image = models.ImageField(upload_to="uploads/", blank=True)
     drone = models.ForeignKey(Drone, on_delete=models.PROTECT, related_name="Medications")
 
     def __str__(self) -> str:

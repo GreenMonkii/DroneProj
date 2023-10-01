@@ -20,11 +20,11 @@ class DroneView(APIView):
         """
         Get a list of all drones.
 
-        **Query parameters:**
+        ### Query parameters:
 
         * `available`: If `True`, only return drones that are available.
 
-        **Returns:**
+        ### Returns:
 
         A JSON object containing a list of drones.
         """
@@ -90,13 +90,18 @@ class MedicationsView(APIView):
 
         ser = MedicationsSerializer(data=request.data)
         drone = Drone.objects.get(pk=request.data.get("drone"))
-        if drone and drone.weight() + int(request.data.get("weight")) <= drone.weight_limit:
-            ser.is_valid(raise_exception=True)
-            ser.save()
-            drone.state = Drone.State.LOADED if drone.weight() > 0 else drone.state
-            drone.battery_capacity -= 20
-            drone.save()
-            return Response(ser.data, status=status.HTTP_201_CREATED)
+        if drone and (drone.weight() + int(request.data.get("weight")) <= drone.weight_limit):
+            if drone.battery_capacity >= 25:
+                ser.is_valid(raise_exception=True)
+                ser.save()
+                drone.state = Drone.State.LOADED if drone.weight(
+                ) == drone.weight_limit else Drone.State.LOADING
+                drone.battery_capacity -= 20
+                drone.save()
+                return Response(ser.data, status=status.HTTP_201_CREATED)
+            else:
+                return Response({"message": f"Drone-{drone.pk} battery level is below 25% and cannot be loaded!"},
+                                status=status.HTTP_400_BAD_REQUEST,)
         else:
             return Response(
                 {"message": f"Drone-{drone.pk} weight limit exceeded!"},
@@ -139,6 +144,14 @@ def load_drone(request: Request, pk: int):
                         },
                         status=status.HTTP_400_BAD_REQUEST,
                     )
+            else:
+                return Response({
+                    "message": f"Drone-{pk} loaded successfully!"
+                }, status=status.HTTP_201_CREATED)
+        else:
+            return Response({
+                "message": f"Drone-{pk} is currently not on standby and cannot be loaded!"
+            }, status=status.HTTP_406_NOT_ACCEPTABLE)
 
 
 @api_view(["GET"])
