@@ -25,7 +25,7 @@ class Drone(models.Model):
         return f"Drone {self.serial_number}"
 
     def weight(self) -> int:
-        meds = self.Medications.all()
+        meds = self.Medications.filter(active=True)
         return sum(map(lambda x: x.weight, meds))
 
 class Medications(models.Model):
@@ -35,6 +35,7 @@ class Medications(models.Model):
     code = models.CharField(max_length=255, validators=[RegexValidator(
         regex=r"^[A-Z0-9_]+$", message="Only Uppercase Letters, Numbers and '_' are allowed", code="Invalid Code")])
     image = models.ImageField(upload_to="uploads/", blank=True)
+    active = models.BooleanField(default=True)
     drone = models.ForeignKey(Drone, on_delete=models.PROTECT, related_name="Medications")
 
     def __str__(self) -> str:
@@ -52,3 +53,11 @@ class DroneBatteryLevelEvent(models.Model):
 
     def __str__(self):
         return f'DroneBatteryLevelEvent {self.id}'
+
+class DroneMedicationDeliveryEvent(models.Model):
+    drone = models.ForeignKey(Drone, on_delete=models.CASCADE)
+    medication = models.ForeignKey(Medications, on_delete=models.DO_NOTHING)
+    delivery_time = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f"DroneMedicationDeliveryEvent {self.id}"

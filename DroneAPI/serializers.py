@@ -16,3 +16,9 @@ class MedicationsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Medications
         fields = ["name", "weight", "code", "image", "drone"]
+
+class DroneMedicationDeliveryEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DroneMedicationDeliveryEvent
+        fields = '__all__'
+        read_only_fields = ("delivery_time",)

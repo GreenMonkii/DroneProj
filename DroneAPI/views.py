@@ -2,13 +2,15 @@
 A Django API for managing drones and medications.
 """
 
-from django.shortcuts import render
+from django.http import HttpResponseRedirect
+from django.contrib import messages
+from django.urls import reverse
 from rest_framework.decorators import APIView, api_view
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Drone, Medications
-from .serializers import DroneSerializer, MedicationsSerializer
+from .models import Drone, DroneMedicationDeliveryEvent, Medications
+from .serializers import DroneMedicationDeliveryEventSerializer, DroneSerializer, MedicationsSerializer
 
 
 class DroneView(APIView):
@@ -195,3 +197,28 @@ def get_drone_battery(request: Request, pk: int):
     if request.method == "GET":
         drone_battery = Drone.objects.get(pk=pk).battery_capacity
         return Response({"Battery Level": drone_battery})
+
+@api_view(["POST"])
+def send_drone_delivery(request: Request, pk: int):
+    if request.method == "POST":
+        drone = Drone.objects.get(pk=pk)
+        drone.state = Drone.State.DELIVERING
+        drone.save()
+        medications = Medications.objects.filter(drone=pk)
+        print(f"There are {len(medications)} related to this drone!")
+
+        for medication in medications:
+            drone_medication_delivery_event = DroneMedicationDeliveryEvent(
+                drone=drone,
+                medication=medication
+            )
+            drone_medication_delivery_event.save()
+
+            medication.active = False
+            medication.save()
+        
+        drone.state = Drone.State.DELIVERED
+        drone.save()
+        data = DroneMedicationDeliveryEvent.objects.filter(drone=pk).select_related()
+        ser_data = DroneMedicationDeliveryEventSerializer(data, many=True)
+        return Response(ser_data.data)
