@@ -124,10 +124,11 @@ def load_drone(request: Request, pk: int):
     """
 
     if request.method == "POST":
-        if drone.battery_capacity >= 25:
-            meds = request.data.get("meds").split(",")
-            drone = Drone.objects.get(pk=pk)
-            if drone and drone.state == Drone.State.IDLE:
+
+        meds = request.data.get("meds").split(",")
+        drone = Drone.objects.get(pk=pk)
+        if drone and drone.state == Drone.State.IDLE:
+            if drone.battery_capacity >= 25:
                 drone.state = Drone.State.LOADING
                 drone.battery_capacity -= 20
                 drone.save()
@@ -150,11 +151,11 @@ def load_drone(request: Request, pk: int):
                         "message": f"Drone-{pk} loaded successfully!"
                     }, status=status.HTTP_201_CREATED)
             else:
-                return Response({
-                    "message": f"Drone-{pk} is currently not on standby and cannot be loaded!"
-                }, status=status.HTTP_406_NOT_ACCEPTABLE)
-    else:
-        return Response({"message": f"Drone-{pk} battery level is below 25% and cannot be loaded!"})
+                return Response({"message": f"Drone-{pk} battery level is below 25% and cannot be loaded!"})
+        else:
+            return Response({
+                "message": f"Drone-{pk} is currently not on standby and cannot be loaded!"
+            }, status=status.HTTP_406_NOT_ACCEPTABLE)
 
 
 @api_view(["GET"])
